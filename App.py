@@ -13,14 +13,28 @@ if 'events' not in st.session_state:
 st.title("📅 Proactive Budget Countdown")
 
 # --- SIDEBAR: GLOBAL SETTINGS ---
+# --- SIDEBAR: ADJUST STARTING BUDGET ---
 with st.sidebar:
     st.header("Monthly Setup")
-    starting_budget = st.number_input("Starting Monthly Budget ($)", min_value=0, value=3000)
-    st.divider()
-    if st.button("Reset All Data"):
-        st.session_state.expenses = []
-        st.session_state.events = []
-        st.rerun()
+    
+    # Check if a budget has already been set in this session
+    if 'current_budget' not in st.session_state:
+        st.session_state.current_budget = 3000.0
+
+    # Create an input box that updates the state
+    new_budget = st.number_input(
+        "Edit Starting Budget ($)", 
+        min_value=0.0, 
+        value=st.session_state.current_budget
+    )
+    
+    if st.button("Save New Budget"):
+        st.session_state.current_budget = new_budget
+        st.success(f"Budget updated to ${new_budget:,.2f}!")
+
+    # Reference this variable in the rest of your calculations
+    starting_budget = st.session_state.current_budget
+
 
 # --- SECTION 1: CALENDAR & PLANNING ---
 st.subheader("🗓️ Upcoming Events")
