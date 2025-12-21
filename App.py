@@ -99,4 +99,4 @@ with t2:
 # 7. Recent History
 if st.session_state.expenses:
     st.write("### Recent Expenses")
-    st.table(pd.DataFrame(st
+    st.table(pd.DataFrame(st.session_state.expenses).tail(5))
