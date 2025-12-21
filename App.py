@@ -2,80 +2,54 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="Proactive Budgeter", page_icon="📅")
+# 1. Page Configuration
+st.set_page_config(page_title="Budget Countdown", page_icon="💰", layout="centered")
 
-# --- DATABASE INITIALIZATION ---
+# 2. Initialize "Memory" (Session State)
 if 'expenses' not in st.session_state:
     st.session_state.expenses = []
 if 'events' not in st.session_state:
     st.session_state.events = []
+if 'current_budget' not in st.session_state:
+    st.session_state.current_budget = 3000.0
 
-st.title("📅 Proactive Budget Countdown")
+st.title("💰 Budget Countdown")
 
-# --- SIDEBAR: GLOBAL SETTINGS ---
-# --- SIDEBAR: ADJUST STARTING BUDGET ---
+# 3. Sidebar: Adjustments & Settings
 with st.sidebar:
     st.header("Monthly Setup")
-    
-    # Check if a budget has already been set in this session
-    if 'current_budget' not in st.session_state:
-        st.session_state.current_budget = 3000.0
-
-    # Create an input box that updates the state
-    new_budget = st.number_input(
-        "Edit Starting Budget ($)", 
-        min_value=0.0, 
-        value=st.session_state.current_budget
-    )
+    # This input lets you change your starting amount
+    new_budget = st.number_input("Starting Budget ($)", min_value=0.0, value=st.session_state.current_budget)
     
     if st.button("Save New Budget"):
         st.session_state.current_budget = new_budget
-        st.success(f"Budget updated to ${new_budget:,.2f}!")
+        st.success("Budget Updated!")
+        st.rerun()
+    
+    st.divider()
+    # Reset button to clear everything
+    if st.button("Reset All Data"):
+        st.session_state.expenses = []
+        st.session_state.events = []
+        st.rerun()
 
-    # Reference this variable in the rest of your calculations
-    starting_budget = st.session_state.current_budget
+# Reference the budget for our math
+starting_budget = st.session_state.current_budget
 
+# 4. Input Sections (Tabs work great on mobile)
+tab1, tab2 = st.tabs(["💸 Log Expense", "🗓️ Earmark Event"])
 
-# --- SECTION 1: CALENDAR & PLANNING ---
-st.subheader("🗓️ Upcoming Events")
-with st.expander("Add a Future Event (Earmark Money)"):
-    with st.form("event_form", clear_on_submit=True):
-        event_name = st.text_input("Event Name (e.g., Mom's Birthday)")
-        event_date = st.date_input("Event Date", min_value=datetime.today())
-        event_cost = st.number_input("Set Aside Amount ($)", min_value=0.0)
-        if st.form_submit_button("Earmark Funds"):
-            st.session_state.events.append({"Event": event_name, "Date": event_date, "Amount": event_cost})
-
-# --- SECTION 2: LOGGING ACTUAL SPENDING ---
-st.subheader("💸 Log a Purchase")
-with st.expander("Record an Expense"):
+with tab1:
     with st.form("expense_form", clear_on_submit=True):
         item = st.text_input("What did you buy?")
-        cost = st.number_input("Cost ($)", min_value=0.0)
+        cost = st.number_input("Cost ($)", min_value=0.0, step=1.0)
         if st.form_submit_button("Log Expense"):
-            st.session_state.expenses.append({"Item": item, "Cost": cost})
+            if item and cost > 0:
+                st.session_state.expenses.append({"Item": item, "Cost": cost, "Type": "Spent"})
+                st.rerun()
 
-# --- SECTION 3: THE SMART COUNTDOWN ---
-spent_so_far = sum(e['Cost'] for e in st.session_state.expenses)
-earmarked_total = sum(ev['Amount'] for ev in st.session_state.events)
-safe_to_spend = starting_budget - spent_so_far - earmarked_total
-
-st.divider()
-col1, col2 = st.columns(2)
-
-with col1:
-    st.metric("Safe to Spend", f"${safe_to_spend:,.2f}", help="Starting budget minus spent AND earmarked money.")
-
-with col2:
-    st.metric("Actual Remaining", f"${starting_budget - spent_so_far:,.2f}", help="What's physically left in your bank.")
-
-# --- SECTION 4: VISUAL REMINDERS ---
-if st.session_state.events:
-    st.write("### 🔔 Reminders")
-    for ev in st.session_state.events:
-        days_left = (ev['Date'] - datetime.today().date()).days
-        st.info(f"**{ev['Event']}** is in {days_left} days. You've reserved **${ev['Amount']}**.")
-
-# Progress Bar (based on Safe to Spend)
-progress_val = max(0.0, min(1.0, (spent_so_far + earmarked_total) / starting_budget))
-st.progress(progress_val)
+with tab2:
+    with st.form("event_form", clear_on_submit=True):
+        e_name = st.text_input("Event Name (e.g. Concert)")
+        e_date = st.date_input("When is it?", min_value=datetime.today())
+        e_cost = st.number_input("Amount to set aside ($)", min_value=0.0, step=1.0
