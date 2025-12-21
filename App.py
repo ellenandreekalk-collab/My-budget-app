@@ -63,16 +63,28 @@ c1, c2 = st.columns(2)
 c1.metric("Safe to Spend", f"${safe_to_spend:,.2f}")
 c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
 
-# 6. Calendar Sync Section
-st.divider()
-st.subheader("🗓️ Google Calendar Sync")
-if st.button("🔄 Pull Upcoming Events"):
-    g_events = get_calendar_events()
-    if g_events:
-        for event in g_events:
-            st.write(f"Found: {event['summary']}")
-    else:
-        st.write("No events found. Check your Calendar sharing settings!")
+# 6. Calendar Sync 
+
+def get_calendar_events():
+    try:
+        api_key = st.secrets["api_key"]
+        calendar_id = st.secrets["calendar_id"]
+        
+        # This uses a simple web request instead of the heavy Google library
+        url = f"https://www.googleapis.com/calendar/v3/calendars/{calendar_id}/events?key={api_key}"
+        
+        import requests
+        response = requests.get(url)
+        data = response.json()
+        
+        if "items" in data:
+            return data["items"]
+        else:
+            st.error(f"Google says: {data.get('error', {}).get('message', 'Unknown Error')}")
+            return []
+    except Exception as e:
+        st.error(f"Connection Error: {e}")
+        return []
 
 # 7. Manual Entry Tabs
 t1, t2 = st.tabs(["💸 Log Purchase", "🗓️ Earmark Event"])
