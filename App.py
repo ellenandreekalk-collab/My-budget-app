@@ -1,10 +1,14 @@
+import plotly.express as px
 import streamlit as st
 import pandas as pd
+import requests
 from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 
-# --- 1. Password Protection ---
+
+# --- Password Protection ---
 def check_password():
+    """Returns True if the user had the correct password."""
     if "password_correct" not in st.session_state:
         st.text_input("Enter Password", type="password", on_change=lambda: st.session_state.update({"password_correct": st.session_state.password == st.secrets["password"]}), key="password")
         return False
@@ -13,67 +17,162 @@ def check_password():
 if not check_password():
     st.stop()
 
-# --- 2. Connections ---
-st.set_page_config(page_title="Budget App", layout="wide")
+# 1. Page Setup
+st.set_page_config(page_title="Budget Master", page_icon="💰")
+
+# 2. Connect to Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- 3. Load Data ---
-existing_data = conn.read(worksheet="Sheet1", ttl="0").dropna(subset=['Item', 'Cost'], how='all')
-bills_data = conn.read(worksheet="Bills", ttl="0")
-
-# Fetch initial income from Cell G1
+# 3. Load Data from Sheets
+# Note: Ensure your sheet has headers: Date, Item, Cost
 try:
-    income_df = conn.read(worksheet="Sheet1", usecols=[6], nrows=1, header=None)
-    initial_income = float(income_df.iloc[0, 0])
+    existing_data = conn.read(worksheet="Sheet1", ttl="0")
 except:
-    initial_income = 3000.0
+    existing_data = pd.DataFrame(columns=["Date", "Item", "Cost"])
 
-# --- 4. Sidebar ---
-with st.sidebar:
-    st.header("📝 Log Purchase")
-    with st.form("purchase_form", clear_on_submit=True):
-        new_date = st.date_input("Date", datetime.now())
-        new_item = st.text_input("Item Name")
-        new_cost = st.number_input("Cost ($)", min_value=0.0)
-        if st.form_submit_button("Add Purchase") and new_item:
-            new_row = pd.DataFrame([{"Date": new_date.strftime('%Y-%m-%d'), "Item": new_item, "Cost": new_cost}])
-            updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-            conn.update(worksheet="Sheet1", data=updated_df)
-            st.rerun()
+# 4. Initialize Memory for Calendar (Still temporary for the view)
+if 'events' not in st.session_state:
+    st.session_state.events = []
 
-    st.divider()
-    st.header("⚙️ Monthly Income")
-    starting_budget = st.number_input("Update Income ($)", value=initial_income)
-    
-    # Stable update logic for G1
-    if starting_budget != initial_income:
-        new_income_df = pd.DataFrame([[starting_budget]])
-        conn.update(worksheet="Sheet1", data=new_income_df, range="G1")
+# --- GOOGLE CALENDAR LOGIC ---
+def get_calendar_events():
+    try:
+        api_key = st.secrets["api_key"].strip()
+        calendar_id = st.secrets["calendar_id"].strip()
+        url = f"https://www.googleapis.com/calendar/v3/calendars/{calendar_id}/events"
+        params = {'key': api_key, 'timeMin': datetime.utcnow().isoformat() + 'Z'}
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            return response.json().get("items", [])
+        return []
+    except:
+        return []
+# --- Recurring Bills Logic ---
+st.sidebar.subheader("🔁 Recurring Bills")
+
+# Load existing bills from the "Bills" tab
+try:
+    bills_df = conn.read(worksheet="Bills")
+except:
+    # If tab doesn't exist yet, create a blank one
+    bills_df = pd.DataFrame(columns=["Bill Name", "Amount"])
+
+# Display and Edit Bills
+with st.sidebar.expander("Edit Recurring Bills"):
+    edited_bills = st.data_editor(bills_df, num_rows="dynamic", use_container_width=True)
+    if st.button("💾 Save Bill Changes"):
+        conn.update(worksheet="Bills", data=edited_bills)
+        st.success("Bills updated!")
         st.rerun()
 
-# --- 5. Calculations ---
-total_spent = existing_data['Cost'].sum() if not existing_data.empty else 0.0
-total_bills = bills_data['Amount'].sum() if not bills_data.empty else 0.0
-safe_to_spend = starting_budget - total_spent - total_bills
+# Calculate total bills to subtract from total budget
+total_bills = edited_bills["Amount"].sum()
+st.sidebar.info(f"Total Monthly Bills: ${total_bills:,.2f}")
+st.title("💰 Smart Budget Countdown")
 
-# --- 6. Dashboard Main View ---
-st.title("💰 Budget Dashboard")
+# 5. Math Logic (Using Data from the Google Sheet)
+try:
+    # Read the value from cell G1 in Sheet1
+    income_df = conn.read(worksheet="Sheet1", usecols=["G"], nrows=1)
+    initial_income = float(income_df.iloc[0,0])
+except:
+    initial_income = 3000.0  # Default fallback
+# 1. First, define starting_budget (usually inside st.sidebar)
+starting_budget = st.sidebar.number_input("Monthly Income", value=initial_income, step=100.0)
 
-col1, col2 = st.columns(2)
-col1.metric("Remaining Budget", f"${safe_to_spend:,.2f}")
-col2.metric("Total Bills", f"${total_bills:,.2f}")
+# 2. THEN do the comparison check
+if starting_budget != initial_income:
+    # Package the number into a DataFrame so the connection understands it
+    import pandas as pd
+    new_income_data = pd.DataFrame([[starting_budget]])
+    
+    # Update using the DataFrame
+    conn.update(worksheet="Sheet1", data=new_income_data, range="G1")
+    st.rerun()])
+    
 
+# 6. Dashboard Metrics
+st.info(f"You have logged **{len(existing_data)}** purchases.")
+c1, c2 = st.columns(2)
+c1.metric("Remaining Budget", f"${safe_to_spend:,.2f}")
+c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
+
+# --- Display Transactions Table ---
+st.subheader("📝 Logged Purchases")
+if not existing_data.empty:
+    # This displays the table of all purchases from your Google Sheet
+    st.dataframe(existing_data, use_container_width=True)
+else:
+    st.info("No purchases logged yet. Start by adding one below!")
+
+# 7. Log Purchase (Saves to Google Sheets)
+
+# Update your main budget calculation to include these bills
+# (Find where you calculate remaining_budget and update it to:)
+# remaining_budget = 3000 - total_spent - total_bills
+
+# --- New Month / Clear Data Logic ---
+    # --- Logout Button ---
+with st.sidebar:
+    if st.button("🔒 Logout"):
+        # This clears the "password_correct" flag we set earlier
+        st.session_state["password_correct"] = False
+        st.rerun()
+    st.divider() # Adds a clean line below the logout button
+    st.divider()
+    if st.button("🏁 Start New Month"):
+        try:
+            # 1. Read the current spending from Sheet1
+            current_data = conn.read(worksheet="Sheet1")
+            
+            # 2. Create a name for the archive (e.g., "Dec 2025 Archive")
+            archive_name = datetime.now().strftime("%b %Y Archive")
+            
+            # 3. Create a new tab and move the data there
+            # Note: This requires the gsheets connection to have 'create' permissions
+            conn.create(worksheet=archive_name, data=current_data)
+            
+            # 4. Clear Sheet1 by overwriting it with just the headers
+            # This resets your "Remaining Budget" back to the full $3,000.00
+            reset_df = pd.DataFrame(columns=["Item", "Cost", "Date"])
+            conn.update(worksheet="Sheet1", data=reset_df)
+            
+            st.success(f"Budget reset! Data saved to {archive_name}")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Could not archive: {e}")
 st.divider()
+with st.form("buy_form", clear_on_submit=True):
+    st.subheader("💸 Log New Purchase")
+    item = st.text_input("Item Name")
+    cost = st.number_input("Cost ($)", min_value=0.0)
+    if st.form_submit_button("Save to Google Sheets"):
+        new_row = pd.DataFrame([{"Date": datetime.now().strftime("%Y-%m-%d"), "Item": item, "Cost": cost}])
+        updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+        conn.update(worksheet="Sheet1", data=updated_df)
+        st.success("Transaction Recorded!")
+        st.rerun()
 
-# --- 7. The Missing Sections ---
-tab1, tab2 = st.tabs(["📝 Purchase History", "📑 Recurring Bills"])
+# 8. Calendar Sync
+st.divider()
+st.subheader("🗓️ Sync Calendar")
+if st.button("🔄 Update Events"):
+    fetched = get_calendar_events()
+    # 1. Capture the start date/time
+    events_list = [
+        {
+            "Name": e.get('summary', 'Event'),
+            "Date": e.get('start', {}).get('dateTime', e.get('start', {}).get('date'))
+        } for e in fetched
+    ]
+    
+    # 2. ADD THIS LINE: Sort the list by the "Date" field
+    st.session_state.events = sorted(events_list, key=lambda x: x['Date'])
 
-with tab1:
-    st.subheader("Purchase History")
-    # Only show relevant columns A, B, and C
-    st.dataframe(existing_data[['Item', 'Cost', 'Date']], use_container_width=True)
-
-with tab2:
-    st.subheader("Your Monthly Bills")
-    # Displays your Mortgage, CC Debt, and others from source [1]
-    st.dataframe(bills_data, use_container_width=True)
+for ev in st.session_state.events:
+    if ev['Date']:
+        # Formats the date to look like "Jan 03"
+        clean_date = datetime.fromisoformat(ev['Date'].replace('Z', '+00:00')).strftime('%b %d')
+        st.write(f"📍 {clean_date}: {ev['Name']}")
+    else:
+        st.write(f"📍 {ev['Name']}")
