@@ -94,6 +94,12 @@ if starting_budget != initial_income:
     # 3. Refresh the app to show the new $3,200 total
     st.rerun()
     
+# --- CALCULATIONS ---
+# 1. Total your individual purchases from the table
+total_spent = existing_data['Cost'].sum() if not existing_data.empty else 0.0
+
+# 2. Calculate what is left (This defines the missing variable)
+safe_to_spend = starting_budget - total_spent - total_bills
 
 # 6. Dashboard Metrics
 st.info(f"You have logged **{len(existing_data)}** purchases.")
