@@ -34,22 +34,6 @@ def get_calendar_events():
         return []
     except:
         return []
-
-st.title("💰 Smart Budget Countdown")
-
-# 5. Math Logic (Using Data from the Google Sheet)
-starting_budget = st.sidebar.number_input("Monthly Income", value=3000.0)
-total_spent = existing_data["Cost"].sum()
-safe_to_spend = starting_budget - total_spent
-
-# 6. Dashboard Metrics
-st.info(f"You have logged **{len(existing_data)}** purchases.")
-c1, c2 = st.columns(2)
-c1.metric("Remaining Budget", f"${safe_to_spend:,.2f}")
-c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
-
-# 7. Log Purchase (Saves to Google Sheets)
-
 # --- Recurring Bills Logic ---
 st.sidebar.subheader("🔁 Recurring Bills")
 
@@ -71,6 +55,20 @@ with st.sidebar.expander("Edit Recurring Bills"):
 # Calculate total bills to subtract from total budget
 total_bills = edited_bills["Amount"].sum()
 st.sidebar.info(f"Total Monthly Bills: ${total_bills:,.2f}")
+st.title("💰 Smart Budget Countdown")
+
+# 5. Math Logic (Using Data from the Google Sheet)
+starting_budget = st.sidebar.number_input("Monthly Income", value=3000.0)
+total_spent = existing_data["Cost"].sum()
+safe_to_spend = starting_budget - total_spent - total_bills
+
+# 6. Dashboard Metrics
+st.info(f"You have logged **{len(existing_data)}** purchases.")
+c1, c2 = st.columns(2)
+c1.metric("Remaining Budget", f"${safe_to_spend:,.2f}")
+c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
+
+# 7. Log Purchase (Saves to Google Sheets)
 
 # Update your main budget calculation to include these bills
 # (Find where you calculate remaining_budget and update it to:)
