@@ -1,3 +1,4 @@
+import plotly.express as px
 import streamlit as st
 import pandas as pd
 import requests
@@ -73,6 +74,27 @@ st.title("💰 Smart Budget Countdown")
 starting_budget = st.sidebar.number_input("Monthly Income", value=3000.0)
 total_spent = existing_data["Cost"].sum()
 safe_to_spend = starting_budget - total_spent - total_bills
+
+# --- Spending Breakdown Chart ---
+st.subheader("📊 Spending Breakdown")
+
+# Create a simple list of your bill data for the chart
+bill_data = {
+    "Category": ["Mortgage", "Pilates", "Verizon", "Insurance", "Electricity", "Gym"],
+    "Amount": [744.00, 152.00, 110.00, 112.00, 95.00, 50.00]
+}
+
+# Create the pie chart
+fig = px.pie(
+    bill_data, 
+    values='Amount', 
+    names='Category', 
+    title='Monthly Bills Distribution',
+    hole=0.4  # This makes it a "Donut" chart, which is easier to read
+)
+
+# Display the chart in the app
+st.plotly_chart(fig)
 
 # 6. Dashboard Metrics
 st.info(f"You have logged **{len(existing_data)}** purchases.")
