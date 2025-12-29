@@ -87,8 +87,6 @@ c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
 # remaining_budget = 3000 - total_spent - total_bills
 
 # --- New Month / Clear Data Logic ---
-with st.sidebar:
-    
     # --- Logout Button ---
 with st.sidebar:
     if st.button("🔒 Logout"):
