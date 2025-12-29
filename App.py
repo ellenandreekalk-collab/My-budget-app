@@ -71,15 +71,18 @@ st.sidebar.info(f"Total Monthly Bills: ${total_bills:,.2f}")
 st.title("💰 Smart Budget Countdown")
 
 # 5. Math Logic (Using Data from the Google Sheet)
-# --- Replacement for the Monthly Income section ---
+try:
+    # Read the value from cell G1 in Sheet1
+    income_df = conn.read(worksheet="Sheet1", usecols=["G"], nrows=1)
+    initial_income = float(income_df.iloc[0,0])
+except:
+    initial_income = 3000.0  # Default fallback
+# 1. First, define starting_budget (usually inside st.sidebar)
+starting_budget = st.sidebar.number_input("Monthly Income", value=initial_income, step=100.0)
+
+# 2. THEN do the comparison check
 if starting_budget != initial_income:
-    # We use .update() with a simple list for a specific cell range
-    conn.update(
-        worksheet="Sheet1", 
-        data=[[starting_budget]], 
-        range="G1"
-    )
-    st.toast(f"✅ Income updated to ${starting_budget:,.2f}!")
+    conn.update(worksheet="Sheet1", data=[[starting_budget]], range="G1")
     st.rerun()
 total_spent = existing_data["Cost"].sum()
 safe_to_spend = starting_budget - total_spent - total_bills
@@ -87,10 +90,18 @@ safe_to_spend = starting_budget - total_spent - total_bills
 # --- Spending Breakdown Chart ---
 st.subheader("📊 Spending Breakdown")
 
-# Create a simple list of your bill data for the chart
-bill_data = {
-    "Category": ["Mortgage", "Pilates", "Verizon", "Insurance", "Electricity", "Gym"],
-    "Amount": [744.00, 152.00, 110.00, 112.00, 95.00, 50.00]
+# Create the pie chart using your actual bill data
+if not edited_bills.empty:
+    fig = px.pie(
+        edited_bills, 
+        values='Amount', 
+        names='Bill Name', 
+        title='Monthly Bills Distribution',
+        hole=0.4
+    )
+    st.plotly_chart(fig)
+else:
+    st.write("Add some bills in the sidebar to see your breakdown!")
 }
 
 # Create the pie chart
