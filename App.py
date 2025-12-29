@@ -87,40 +87,19 @@ if starting_budget != initial_income:
 total_spent = existing_data["Cost"].sum()
 safe_to_spend = starting_budget - total_spent - total_bills
 
-# --- Spending Breakdown Chart ---
-st.subheader("📊 Spending Breakdown")
-
-# Create the pie chart using your actual bill data
-if not edited_bills.empty:
-    fig = px.pie(
-        edited_bills, 
-        values='Amount', 
-        names='Bill Name', 
-        title='Monthly Bills Distribution',
-        hole=0.4
-    )
-    st.plotly_chart(fig)
-else:
-    st.write("Add some bills in the sidebar to see your breakdown!")
-
-
-# Create the pie chart
-fig = px.pie(
-    edited_bills, 
-    values='Amount', 
-    names=edited_bills.columns[0],  # This automatically picks the first column (the names)
-    title='Monthly Bills Distribution',
-    hole=0.4  # This makes it a "Donut" chart, which is easier to read
-)
-
-# Display the chart in the app
-st.plotly_chart(fig)
-
 # 6. Dashboard Metrics
 st.info(f"You have logged **{len(existing_data)}** purchases.")
 c1, c2 = st.columns(2)
 c1.metric("Remaining Budget", f"${safe_to_spend:,.2f}")
 c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
+
+# --- Display Transactions Table ---
+st.subheader("📝 Logged Purchases")
+if not existing_data.empty:
+    # This displays the table of all purchases from your Google Sheet
+    st.dataframe(existing_data, use_container_width=True)
+else:
+    st.info("No purchases logged yet. Start by adding one below!")
 
 # 7. Log Purchase (Saves to Google Sheets)
 
