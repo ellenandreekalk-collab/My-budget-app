@@ -88,6 +88,14 @@ c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
 
 # --- New Month / Clear Data Logic ---
 with st.sidebar:
+    
+    # --- Logout Button ---
+with st.sidebar:
+    if st.button("🔒 Logout"):
+        # This clears the "password_correct" flag we set earlier
+        st.session_state["password_correct"] = False
+        st.rerun()
+    st.divider() # Adds a clean line below the logout button
     st.divider()
     if st.button("🏁 Start New Month"):
         try:
