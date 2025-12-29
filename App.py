@@ -88,7 +88,7 @@ if starting_budget != initial_income:
     
     # Update using the DataFrame
     conn.update(worksheet="Sheet1", data=new_income_data, range="G1")
-    st.rerun()])
+    st.rerun()
     
 
 # 6. Dashboard Metrics
