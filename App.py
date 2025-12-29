@@ -81,11 +81,20 @@ except:
 starting_budget = st.sidebar.number_input("Monthly Income", value=initial_income, step=100.0)
 
 # 2. THEN do the comparison check
+import pandas as pd # Ensure this is at the top of your script
+
+# ... near Line 84 ...
 if starting_budget != initial_income:
-    conn.update(worksheet="Sheet1", data=[[starting_budget]], range="G1")
+    # Create a small 1x1 DataFrame to send to the sheet
+    income_df = pd.DataFrame([[starting_budget]])
+    
+    # Update the sheet using the DataFrame format
+    conn.update(
+        worksheet="Sheet1", 
+        data=income_df, 
+        range="G1"
+    )
     st.rerun()
-total_spent = existing_data["Cost"].sum()
-safe_to_spend = starting_budget - total_spent - total_bills
 
 # 6. Dashboard Metrics
 st.info(f"You have logged **{len(existing_data)}** purchases.")
