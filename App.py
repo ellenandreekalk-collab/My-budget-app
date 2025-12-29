@@ -82,16 +82,14 @@ starting_budget = st.sidebar.number_input("Monthly Income", value=initial_income
 
 # 2. THEN do the comparison check
 if starting_budget != initial_income:
-    # Create a small 1x1 DataFrame to send to the sheet
-    income_df = pd.DataFrame([[starting_budget]])
+    # Package the number into a DataFrame so the connection understands it
+    import pandas as pd
+    new_income_data = pd.DataFrame([[starting_budget]])
     
-    # Update the sheet using the DataFrame format
-    conn.update(
-        worksheet="Sheet1", 
-        data=income_df, 
-        range="G1"
-    )
-    st.rerun()
+    # Update using the DataFrame
+    conn.update(worksheet="Sheet1", data=new_income_data, range="G1")
+    st.rerun()])
+    
 
 # 6. Dashboard Metrics
 st.info(f"You have logged **{len(existing_data)}** purchases.")
