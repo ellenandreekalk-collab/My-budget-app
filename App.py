@@ -108,7 +108,7 @@ else:
 fig = px.pie(
     edited_bills, 
     values='Amount', 
-    names='Category', 
+    names=edited_bills.columns[0],  # This automatically picks the first column (the names)
     title='Monthly Bills Distribution',
     hole=0.4  # This makes it a "Donut" chart, which is easier to read
 )
