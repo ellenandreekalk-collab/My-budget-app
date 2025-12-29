@@ -115,22 +115,21 @@ st.divider()
 st.subheader("🗓️ Sync Calendar")
 if st.button("🔄 Update Events"):
     fetched = get_calendar_events()
-    # Updated to capture the start date/time of the event
-    st.session_state.events = [
+    # 1. Capture the start date/time
+    events_list = [
         {
             "Name": e.get('summary', 'Event'),
             "Date": e.get('start', {}).get('dateTime', e.get('start', {}).get('date'))
         } for e in fetched
     ]
+    
+    # 2. ADD THIS LINE: Sort the list by the "Date" field
+    st.session_state.events = sorted(events_list, key=lambda x: x['Date'])
 
 for ev in st.session_state.events:
-    # Formats the date to look like "Dec 28"
     if ev['Date']:
+        # Formats the date to look like "Jan 03"
         clean_date = datetime.fromisoformat(ev['Date'].replace('Z', '+00:00')).strftime('%b %d')
         st.write(f"📍 {clean_date}: {ev['Name']}")
     else:
         st.write(f"📍 {ev['Name']}")
-
-# 9. View History
-with st.expander("View Purchase History"):
-    st.dataframe(existing_data, use_container_width=True)
