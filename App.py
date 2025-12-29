@@ -82,13 +82,17 @@ starting_budget = st.sidebar.number_input("Monthly Income", value=initial_income
 
 # 2. THEN do the comparison check
 if starting_budget != initial_income:
-    # Package the number into a DataFrame so the connection understands it
-    import pandas as pd
-    new_income_data = pd.DataFrame([[starting_budget]])
+    # 1. Package the new income into a DataFrame
+    income_df = pd.DataFrame([[starting_budget]])
     
-    # Update using the DataFrame
-    conn.update(worksheet="Sheet1", data=new_income_data, range="G1")
-    st.rerun()])
+    # 2. Update Cell G1 in your Google Sheet
+    conn.update(
+        worksheet="Sheet1", 
+        data=income_df, 
+        range="G1"
+    )
+    # 3. Refresh the app to show the new $3,200 total
+    st.rerun()
     
 
 # 6. Dashboard Metrics
