@@ -49,6 +49,30 @@ c1.metric("Remaining Budget", f"${safe_to_spend:,.2f}")
 c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
 
 # 7. Log Purchase (Saves to Google Sheets)
+# --- New Month / Clear Data Logic ---
+with st.sidebar:
+    st.divider()
+    if st.button("🏁 Start New Month"):
+        try:
+            # 1. Read the current spending from Sheet1
+            current_data = conn.read(worksheet="Sheet1")
+            
+            # 2. Create a name for the archive (e.g., "Dec 2025 Archive")
+            archive_name = datetime.now().strftime("%b %Y Archive")
+            
+            # 3. Create a new tab and move the data there
+            # Note: This requires the gsheets connection to have 'create' permissions
+            conn.create(worksheet=archive_name, data=current_data)
+            
+            # 4. Clear Sheet1 by overwriting it with just the headers
+            # This resets your "Remaining Budget" back to the full $3,000.00
+            reset_df = pd.DataFrame(columns=["Item", "Cost", "Date"])
+            conn.update(worksheet="Sheet1", data=reset_df)
+            
+            st.success(f"Budget reset! Data saved to {archive_name}")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Could not archive: {e}")
 st.divider()
 with st.form("buy_form", clear_on_submit=True):
     st.subheader("💸 Log New Purchase")
