@@ -66,10 +66,21 @@ st.divider()
 st.subheader("🗓️ Sync Calendar")
 if st.button("🔄 Update Events"):
     fetched = get_calendar_events()
-    st.session_state.events = [{"Name": e.get('summary', 'Event')} for e in fetched]
+    # Updated to capture the start date/time of the event
+    st.session_state.events = [
+        {
+            "Name": e.get('summary', 'Event'),
+            "Date": e.get('start', {}).get('dateTime', e.get('start', {}).get('date'))
+        } for e in fetched
+    ]
 
 for ev in st.session_state.events:
-    st.write(f"📍 {ev['Name']}")
+    # Formats the date to look like "Dec 28"
+    if ev['Date']:
+        clean_date = datetime.fromisoformat(ev['Date'].replace('Z', '+00:00')).strftime('%b %d')
+        st.write(f"📍 {clean_date}: {ev['Name']}")
+    else:
+        st.write(f"📍 {ev['Name']}")
 
 # 9. View History
 with st.expander("View Purchase History"):
