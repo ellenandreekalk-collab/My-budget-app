@@ -106,7 +106,7 @@ else:
 
 # Create the pie chart
 fig = px.pie(
-    bill_data, 
+    edited_bills, 
     values='Amount', 
     names='Category', 
     title='Monthly Bills Distribution',
