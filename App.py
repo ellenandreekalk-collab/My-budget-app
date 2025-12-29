@@ -90,6 +90,8 @@ if starting_budget != initial_income:
     conn.update(worksheet="Sheet1", data=new_income_data, range="G1")
     st.rerun()
     
+total_spent = existing_data["Cost"].sum()
+safe_to_spend = starting_budget - total_spent - total_bills
 
 # 6. Dashboard Metrics
 st.info(f"You have logged **{len(existing_data)}** purchases.")
