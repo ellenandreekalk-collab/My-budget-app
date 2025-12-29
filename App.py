@@ -4,6 +4,17 @@ import requests
 from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 
+
+# --- Password Protection ---
+def check_password():
+    """Returns True if the user had the correct password."""
+    if "password_correct" not in st.session_state:
+        st.text_input("Enter Password", type="password", on_change=lambda: st.session_state.update({"password_correct": st.session_state.password == st.secrets["password"]}), key="password")
+        return False
+    return st.session_state["password_correct"]
+
+if not check_password():
+
 # 1. Page Setup
 st.set_page_config(page_title="Budget Master", page_icon="💰")
 
