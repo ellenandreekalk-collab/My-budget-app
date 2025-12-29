@@ -14,6 +14,7 @@ def check_password():
     return st.session_state["password_correct"]
 
 if not check_password():
+    st.stop()
 
 # 1. Page Setup
 st.set_page_config(page_title="Budget Master", page_icon="💰")
