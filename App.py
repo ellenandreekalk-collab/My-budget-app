@@ -71,7 +71,22 @@ st.sidebar.info(f"Total Monthly Bills: ${total_bills:,.2f}")
 st.title("💰 Smart Budget Countdown")
 
 # 5. Math Logic (Using Data from the Google Sheet)
-starting_budget = st.sidebar.number_input("Monthly Income", value=3000.0)
+# 1. Fetch the saved income from your Google Sheet (Cell G1)
+try:
+    # We use 'existing_data' or your 'conn' object to get the value
+    saved_income_val = conn.read(worksheet="Sheet1", usecols=["G"], nrows=1).iloc[0,0]
+    initial_income = float(saved_income_val)
+except:
+    initial_income = 3000.0  # Fallback if G1 is empty
+
+# 2. Update the sidebar input to use that saved value
+starting_budget = st.sidebar.number_input("Monthly Income", value=initial_income, step=100.0)
+
+# 3. If you change it in the app, save it back to the sheet immediately
+if starting_budget != initial_income:
+    # This updates your Google Sheet so it remembers for next time
+    conn.update(worksheet="Sheet1", data=pd.DataFrame([[starting_budget]], columns=["Income"]), range="G1")
+    st.rerun()
 total_spent = existing_data["Cost"].sum()
 safe_to_spend = starting_budget - total_spent - total_bills
 
