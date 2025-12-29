@@ -49,6 +49,33 @@ c1.metric("Remaining Budget", f"${safe_to_spend:,.2f}")
 c2.metric("Daily Allowance", f"${safe_to_spend/30:,.2f}")
 
 # 7. Log Purchase (Saves to Google Sheets)
+
+# --- Recurring Bills Logic ---
+st.sidebar.subheader("🔁 Recurring Bills")
+
+# Load existing bills from the "Bills" tab
+try:
+    bills_df = conn.read(worksheet="Bills")
+except:
+    # If tab doesn't exist yet, create a blank one
+    bills_df = pd.DataFrame(columns=["Bill Name", "Amount"])
+
+# Display and Edit Bills
+with st.sidebar.expander("Edit Recurring Bills"):
+    edited_bills = st.data_editor(bills_df, num_rows="dynamic", use_container_width=True)
+    if st.button("💾 Save Bill Changes"):
+        conn.update(worksheet="Bills", data=edited_bills)
+        st.success("Bills updated!")
+        st.rerun()
+
+# Calculate total bills to subtract from total budget
+total_bills = edited_bills["Amount"].sum()
+st.sidebar.info(f"Total Monthly Bills: ${total_bills:,.2f}")
+
+# Update your main budget calculation to include these bills
+# (Find where you calculate remaining_budget and update it to:)
+# remaining_budget = 3000 - total_spent - total_bills
+
 # --- New Month / Clear Data Logic ---
 with st.sidebar:
     st.divider()
