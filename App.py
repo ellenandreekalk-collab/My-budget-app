@@ -102,7 +102,7 @@ if not edited_bills.empty:
     st.plotly_chart(fig)
 else:
     st.write("Add some bills in the sidebar to see your breakdown!")
-}
+
 
 # Create the pie chart
 fig = px.pie(
