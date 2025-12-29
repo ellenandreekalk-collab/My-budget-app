@@ -81,9 +81,6 @@ except:
 starting_budget = st.sidebar.number_input("Monthly Income", value=initial_income, step=100.0)
 
 # 2. THEN do the comparison check
-import pandas as pd # Ensure this is at the top of your script
-
-# ... near Line 84 ...
 if starting_budget != initial_income:
     # Create a small 1x1 DataFrame to send to the sheet
     income_df = pd.DataFrame([[starting_budget]])
